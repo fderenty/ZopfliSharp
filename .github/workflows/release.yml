@@ -17,6 +17,7 @@ jobs:
   pack:
     name: NuGet package
     runs-on: ubuntu-26.04
+    timeout-minutes: 30
     # id-token lets the job ask GitHub for the signed token that nuget.org trusted publishing
     # exchanges for a one-hour API key, so no key is stored anywhere.
     permissions:
@@ -97,6 +98,7 @@ jobs:
     needs: [pack]
     if: github.ref_type == 'tag'
     runs-on: ubuntu-26.04
+    timeout-minutes: 10
     steps:
       - uses: actions/download-artifact@v8
         with:

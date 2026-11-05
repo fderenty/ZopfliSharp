@@ -11,6 +11,9 @@ jobs:
   test:
     name: Test on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    # A hung job otherwise runs for six hours, counted against the minutes of a private
+    # repository. A normal run takes two or three.
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -42,6 +45,7 @@ jobs:
   native:
     name: NativeAOT on linux-x64, linux-arm64 and linux-arm
     runs-on: ubuntu-26.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
 
@@ -49,10 +53,13 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      # The NativeAOT link, the cross toolchains for both ARM targets, and qemu to run them.
+      # The NativeAOT link, the cross toolchains for both ARM targets, and qemu to run them:
+      # about 100 MB. The Azure mirror has been seen to slow to a crawl partway through, so
+      # each download gets a timeout and retries rather than hanging the job.
       - name: Install the toolchains
         run: >
-          sudo apt-get update && sudo apt-get install -y
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends
+          -o Acquire::Retries=5 -o Acquire::http::Timeout=30
           clang lld zlib1g-dev
           gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu libc6-dev-arm64-cross
           gcc-arm-linux-gnueabihf binutils-arm-linux-gnueabihf libc6-dev-armhf-cross
@@ -67,6 +74,7 @@ jobs:
   native-windows:
     name: NativeAOT on ${{ matrix.rids }}
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
