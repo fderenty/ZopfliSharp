@@ -1,0 +1,42 @@
+<Project>
+
+  <PropertyGroup>
+    <Version>0.1.0</Version>
+    <Authors>Frédéric Derenty</Authors>
+    <Copyright>Copyright © 2026 Frédéric Derenty. Zopfli: Copyright 2011-2016 Google Inc.</Copyright>
+    <!-- A port of Google's Zopfli, which is Apache-2.0: the derived work keeps that licence.
+         NOTICE names the original authors and travels with the package. -->
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/fderenty/ZopfliSharp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/fderenty/ZopfliSharp</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Keep the AOT and trimming analysers on at all times, not only when publishing with a
+         runtime identifier. They catch reflection and dynamic-code patterns at build time, on
+         any machine, without needing a native linker present. -->
+    <EnableAotAnalyzer>true</EnableAotAnalyzer>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <EnableSingleFileAnalyzer>true</EnableSingleFileAnalyzer>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Ship symbols and Source Link so consumers can step into the library from their own
+         debugger. Source Link is built into the SDK from .NET 8 onward, so this adds no
+         PackageReference and leaves the dependency graph empty. -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <!-- Set by CI so released packages are byte-for-byte reproducible from a given commit. -->
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <!-- The licence and its notice belong in every package. -->
+  <ItemGroup Condition="'$(IsPackable)' != 'false'">
+    <None Include="$(MSBuildThisFileDirectory)LICENSE" Pack="true" PackagePath="/" Visible="false" />
+    <None Include="$(MSBuildThisFileDirectory)NOTICE" Pack="true" PackagePath="/" Visible="false" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,116 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to stamp on the packages
+        required: false
+        default: 0.1.0-dev
+
+permissions:
+  contents: write
+
+jobs:
+  pack:
+    name: NuGet package
+    runs-on: ubuntu-26.04
+    # id-token lets the job ask GitHub for the signed token that nuget.org trusted publishing
+    # exchanges for a one-hour API key, so no key is stored anywhere.
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      ZOPFLISHARP_REQUIRE_REFERENCE: '1'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=${{ inputs.version || '0.1.0-dev' }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.x'
+
+      - run: python -m pip install --quiet zopfli
+
+      - run: dotnet test -c Release --nologo
+
+      - name: Pack
+        run: >
+          dotnet pack src/ZopfliSharp/ZopfliSharp.csproj -c Release -o packages
+          -p:Version=${{ steps.version.outputs.value }}
+          --nologo
+
+      - name: Show package contents
+        run: |
+          set -euo pipefail
+          for p in packages/*.nupkg; do
+            echo "=== $p"
+            unzip -l "$p" | grep -vE '_rels|\[Content_Types\]|package/services'
+          done
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: nuget-packages
+          path: packages/*
+          if-no-files-found: error
+
+      # Publishing uses nuget.org trusted publishing: a policy on the fderenty account trusts
+      # this workflow file in fderenty/ZopfliSharp, and nothing else can obtain a key.
+      #
+      # It runs only on a tag, and only once the repository variable NUGET_PUBLISH is 'true',
+      # so a release can be cut before the policy exists. Without it the packages are still
+      # attached to the release, so a manual push stays possible.
+      - name: Log in to nuget.org
+        id: nuget
+        if: github.ref_type == 'tag' && vars.NUGET_PUBLISH == 'true'
+        uses: NuGet/login@v1
+        with:
+          user: fderenty
+
+      - name: Push to nuget.org
+        if: github.ref_type == 'tag' && vars.NUGET_PUBLISH == 'true'
+        run: >
+          dotnet nuget push "packages/*.nupkg"
+          --source https://api.nuget.org/v3/index.json
+          --api-key "${{ steps.nuget.outputs.NUGET_API_KEY }}"
+          --skip-duplicate
+
+  release:
+    name: Publish release
+    needs: [pack]
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Attach packages to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release view "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1 \
+            || gh release create "${GITHUB_REF_NAME}" \
+                 --repo "${GITHUB_REPOSITORY}" \
+                 --title "${GITHUB_REF_NAME}" \
+                 --generate-notes
+          gh release upload "${GITHUB_REF_NAME}" dist/* --clobber --repo "${GITHUB_REPOSITORY}"

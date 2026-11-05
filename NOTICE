@@ -1,0 +1,19 @@
+ZopfliSharp
+Copyright 2026 Frédéric Derenty
+
+This product is a translation to C# of Zopfli, the compression library by Google:
+https://github.com/google/zopfli
+
+  Zopfli Compression Algorithm
+  Copyright 2011-2016 Google Inc. All Rights Reserved.
+  Licensed under the Apache License, Version 2.0.
+
+  Zopfli was created by Lode Vandevenne and Jyrki Alakuijala, based on an
+  algorithm by Jyrki Alakuijala. Contributors to the original: Mark Adler,
+  Jyrki Alakuijala, Frédéric Kayser, Jeffrey Lim, Daniel Reed, Huzaifa
+  Sidhpurwala, Péter Szabó, Lode Vandevenne, Derek Buitenhuis.
+
+Changes from the original: the C sources under src/zopfli were translated to
+C#, keeping their structure so that the output stays byte-for-byte identical.
+Each translated file names the C file it comes from. Spreading one compression
+over several threads is an addition of this version.

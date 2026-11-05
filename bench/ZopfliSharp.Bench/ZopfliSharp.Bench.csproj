@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <IsPackable>false</IsPackable>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- Published with a runtime identifier, the benchmark is a NativeAOT binary: the same
+         code timed both ways, and proof that the library links under NativeAOT. -->
+    <PublishAot Condition="'$(RuntimeIdentifier)' != ''">true</PublishAot>
+  </PropertyGroup>
+
+  <!--
+    Cross-publishing to ARM from x64 Linux, as SharpApng and Frisket do. NativeAOT needs the
+    target's cross gcc and libc, lld (the SDK otherwise asks clang for the host's ld.bfd, which
+    links x86 only), and the target's objcopy to strip symbols. The binaries then run under
+    qemu-user.
+  -->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'linux-arm64' and '$(NETCoreSdkRuntimeIdentifier)' != 'linux-arm64'">
+    <LinkerFlavor>lld</LinkerFlavor>
+    <ObjCopyName>aarch64-linux-gnu-objcopy</ObjCopyName>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'linux-arm' and '$(NETCoreSdkRuntimeIdentifier)' != 'linux-arm'">
+    <LinkerFlavor>lld</LinkerFlavor>
+    <ObjCopyName>arm-linux-gnueabihf-objcopy</ObjCopyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ZopfliSharp\ZopfliSharp.csproj" />
+  </ItemGroup>
+
+  <!-- The test corpus, so the dump-corpus option can hand it to runs where the test project cannot go:
+       a NativeAOT binary under qemu, the reference zopfli built for another architecture. -->
+  <ItemGroup>
+    <Compile Include="..\..\tests\ZopfliSharp.Tests\Corpus.cs" Link="Corpus.cs" />
+  </ItemGroup>
+
+</Project>

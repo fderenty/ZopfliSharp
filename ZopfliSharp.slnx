@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/bench/">
+    <Project Path="bench/ZopfliSharp.Bench/ZopfliSharp.Bench.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/ZopfliSharp/ZopfliSharp.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ZopfliSharp.Tests/ZopfliSharp.Tests.csproj" />
+  </Folder>
+</Solution>

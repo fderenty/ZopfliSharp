@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- The library uses no reflection, so it survives trimming and NativeAOT untouched.
+         This flag makes the compiler prove it rather than leaving it to chance. -->
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageId>ZopfliSharp</PackageId>
+    <Title>ZopfliSharp</Title>
+    <Description>Zopfli compression in pure C#, with no native dependencies at all. A faithful port of Google's Zopfli: deflate, zlib and gzip output byte-for-byte identical to the C library, typically 3-8% smaller than zlib at its best level, readable by any standard decoder. Thread-safe, trimming and NativeAOT safe.</Description>
+    <PackageTags>zopfli;deflate;zlib;gzip;compression;png;pdf;flate</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="PACKAGE.md" Pack="true" PackagePath="README.md" Visible="false" />
+  </ItemGroup>
+
+  <!--
+    No PackageReference on purpose: everything the port needs is in the BCL.
+  -->
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ZopfliSharp.Tests" />
+  </ItemGroup>
+
+</Project>

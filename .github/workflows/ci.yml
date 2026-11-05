@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Arm64 natively on Linux and macOS, x64 on Linux and Windows.
+        os: [ubuntu-26.04, ubuntu-26.04-arm, windows-latest, macos-latest]
+
+    env:
+      # The comparisons with the C library must run here, not report inconclusive.
+      ZOPFLISHARP_REQUIRE_REFERENCE: '1'
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      # The reference: Google's C sources, compiled by the Python binding.
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.x'
+
+      - run: python -m pip install --quiet zopfli
+
+      - run: dotnet build -c Release --nologo
+
+      - run: dotnet test -c Release --no-build --nologo
+
+  native:
+    name: NativeAOT on linux-x64, linux-arm64 and linux-arm
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      # The NativeAOT link, the cross toolchains for both ARM targets, and qemu to run them.
+      - name: Install the toolchains
+        run: >
+          sudo apt-get update && sudo apt-get install -y
+          clang lld zlib1g-dev
+          gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu libc6-dev-arm64-cross
+          gcc-arm-linux-gnueabihf binutils-arm-linux-gnueabihf libc6-dev-armhf-cross
+          qemu-user
+
+      # A real NativeAOT link per target, so trim and AOT warnings fail here rather than in an
+      # application that uses the library; then each binary, under qemu for ARM, against
+      # Google's zopfli built for the same architecture. Exits non-zero on any difference.
+      - name: Publish, run and compare
+        run: bash build/cross-check.sh --i 5 --files "README.md LICENSE" linux-x64 linux-arm64 linux-arm
+
+  native-windows:
+    name: NativeAOT on ${{ matrix.rids }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # x86 is cross-compiled on x64 and runs there under WoW64.
+          - runner: windows-latest
+            rids: win-x64, win-x86
+          # Nothing emulates Arm64 on x64, so it is checked on its own hardware.
+          - runner: windows-11-arm
+            rids: win-arm64
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      # Each target against Google's zopfli built by MSVC for the same architecture.
+      - name: Publish, run and compare
+        shell: pwsh
+        run: ./build/cross-check.ps1 -Rid ('${{ matrix.rids }}' -split ',\s*') -Iterations 5 -Files README.md, LICENSE
