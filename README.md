@@ -25,8 +25,8 @@ assets served pre-compressed.
 In .NET the only way to it so far has been a wrapper around the native library, which means one
 binary per platform to ship and load. ZopfliSharp is the algorithm itself, in C#.
 
-What it cannot do is shrink data that is already compressed. On the JPEG files of a camera it
-gains 0.5 to 2%, at some two and a half seconds a megabyte: not worth it.
+What it cannot do is shrink data that is already compressed: on the JPEG files of a camera it
+gains 0.5 to 2%, which is not worth the time.
 
 **Faithful, not inspired.** The port follows the C sources function by function, down to the
 details that decide which of two equal-looking choices wins: the costs of the optimal parse kept
